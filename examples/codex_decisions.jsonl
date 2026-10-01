@@ -1,0 +1,2 @@
+{"url":"https://example.invalid/iniziativa-sociale","title":"Brand demo presenta una nuova iniziativa sociale","sentiment":"positivo","confidence":0.86,"reason":"Esempio fittizio: contenuto favorevole al brand legato a un'iniziativa sociale."}
+{"url":"https://example.invalid/citazione-incompleta","title":"Citazione di Brand demo senza contesto sufficiente","sentiment":"neutro","confidence":0.54,"reason":"Esempio fittizio: contesto insufficiente, risultato da lasciare alla revisione manuale."}

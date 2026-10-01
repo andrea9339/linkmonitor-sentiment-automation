@@ -1,0 +1,25 @@
+# Credenziali e configurazione locale
+.env
+.env.*
+!.env.example
+.codex/
+.agents/
+auth.json
+*.pem
+*.key
+
+# Dati operativi, screenshot e archivi
+logs/
+screenshots_errors/
+*.log
+
+# Ambiente Python e file locali
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

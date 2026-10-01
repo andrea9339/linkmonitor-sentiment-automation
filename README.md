@@ -38,7 +38,7 @@ flowchart TD
     N --> O
 ```
 
-Il controllo del link avviene durante la classificazione Codex, prima della scrittura delle decisioni. Se la confidence finale rimane sotto soglia, oppure manca una decisione corrispondente, la fase di applicazione lascia il risultato invariato e lo segnala per revisione manuale. Il prompt richiede il controllo del contenuto; l'uso di `agent-browser` dipende dalla configurazione della sessione Codex e non è imposto dai launcher di questo repository.
+Il controllo del link avviene durante la classificazione Codex, prima della scrittura delle decisioni. Se la confidence finale rimane sotto soglia, oppure manca una decisione corrispondente, la fase di applicazione lascia il risultato invariato e lo segnala per revisione manuale. Il prompt richiede il controllo del contenuto; l'uso di `agent-browser` dipende dalla configurazione della sessione Codex e non è imposto dal launcher di questo repository.
 
 ## Come funziona una singola esecuzione
 
@@ -82,7 +82,6 @@ Ogni esito viene scritto nei log. Un apply senza risultati, con errori, decision
 | --- | --- |
 | `linkmonitor_sentiment_bot.py` | Login, navigazione, estrazione, lettura decisioni, aggiornamento e log |
 | `run_linkmonitor_daily.ps1` | Flusso completo in produzione: extract → Codex → validazione → apply |
-| `run_linkmonitor_test20.ps1` | Lo stesso flusso su un numero limitato di link, con opzione dry-run |
 | `install_linkmonitor_daily_task.ps1` | Registrazione del task giornaliero Windows |
 | `requirements.txt` | Dipendenze Python: Playwright e python-dotenv |
 | `.env.example` | Configurazione di esempio senza credenziali reali |
@@ -91,7 +90,7 @@ Ogni esito viene scritto nei log. Un apply senza risultati, con errori, decision
 
 ## Installazione su Windows
 
-Il flusso completo utilizza Windows PowerShell, Python e la distribuzione npm di Codex CLI, perché i launcher cercano `codex.cmd`. Python 3.12 è una scelta adatta al codice presente. Servono inoltre un account LinkMonitor autorizzato e una sessione Codex autenticata con accesso al modello configurato.
+Il flusso completo utilizza Windows PowerShell, Python e la distribuzione npm di Codex CLI, perché il launcher cerca `codex.cmd`. Python 3.12 è una scelta adatta al codice presente. Servono inoltre un account LinkMonitor autorizzato e una sessione Codex autenticata con accesso al modello configurato.
 
 Da PowerShell, nella cartella del repository:
 
@@ -109,7 +108,7 @@ npm.cmd install -g @openai/codex
 codex.cmd login
 ```
 
-I launcher impostano `gpt-6-luna` con reasoning effort `high`, come nella configurazione operativa originale. Se il modello non è disponibile nel proprio account, occorre modificare il valore di `--model` in entrambi i launcher prima di eseguirli. Configurazione, strumenti e permessi Codex del computer di origine non sono distribuiti in questo repository.
+Il launcher giornaliero imposta `gpt-6-luna` con reasoning effort `high`, come nella configurazione operativa originale. Se il modello non è disponibile nel proprio account, occorre modificare il valore di `--model` in `run_linkmonitor_daily.ps1` prima di eseguirlo. Configurazione, strumenti e permessi Codex del computer di origine non sono distribuiti in questo repository.
 
 Le istruzioni di installazione di [Playwright](https://playwright.dev/python/docs/library) e [Codex CLI](https://developers.openai.com/codex/cli) sono documentate dai rispettivi progetti.
 
@@ -131,23 +130,7 @@ Aprire `.env` e inserire email, password e URL Analytics completo del proprio ac
 | `SLOW_MO_MS` | Rallentamento delle operazioni browser per debug |
 | `CODEX_QUEUE_FILE`, `CODEX_DECISIONS_FILE` | Percorsi per l'uso diretto del bot |
 
-I launcher assumono i percorsi standard sotto `logs/`: per usarli non cambiare le ultime due variabili. Il prompt contiene un elenco di brand del caso d'uso originale, indipendente da `TOPIC_NAME`; per un altro progetto va adattata anche la funzione `write_codex_prompt()`.
-
-## Primo controllo: flusso completo in dry-run
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\run_linkmonitor_test20.ps1 -MaxLinks 5 -DryRun
-```
-
-Il browser resta visibile. Il comando effettua login, estrae dati reali e usa Codex per classificarli, ma non modifica il sentiment. Il dry-run richiede comunque gli account e usa il servizio Codex; può terminare con errore se trova casi da revisionare. Per eseguirlo senza finestra, aggiungere `-Headless`.
-
-Per applicare realmente le decisioni su cinque link:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\run_linkmonitor_test20.ps1 -MaxLinks 5
-```
-
-`run_linkmonitor_test20.ps1` usa 20 link quando `-MaxLinks` non viene specificato. La versione senza `-DryRun` modifica i risultati sul servizio.
+Il launcher assume i percorsi standard sotto `logs/`: per usarlo non cambiare le ultime due variabili. Il prompt contiene un elenco di brand del caso d'uso originale, indipendente da `TOPIC_NAME`; per un altro progetto va adattata anche la funzione `write_codex_prompt()`.
 
 ## Esecuzione manuale delle singole fasi
 
@@ -173,7 +156,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\run_linkmonitor_test20.ps1
 .\.venv\Scripts\python.exe .\linkmonitor_sentiment_bot.py --apply-decisions --test --headed
 ```
 
-La validazione aggiuntiva del numero di righe è eseguita dai launcher PowerShell. Nell'uso manuale, il bot valida e carica le decisioni, ma non esegue tutti gli stessi controlli preliminari del launcher.
+La validazione aggiuntiva del numero di righe è eseguita dal launcher PowerShell. Nell'uso manuale, il bot valida e carica le decisioni, ma non esegue tutti gli stessi controlli preliminari del launcher.
 
 ## Produzione e pianificazione giornaliera
 
@@ -202,7 +185,7 @@ Lo script crea o aggiorna il task **LinkMonitor Sentiment Daily** per l'utente c
 | `logs/codex_decisions.jsonl` | Sentiment, confidence e motivazione |
 | `logs/run_log.csv`, `logs/run_log.jsonl` | Esito di ogni riga elaborata |
 | `logs/review_needed.csv` | Decisioni sotto soglia o mancanti |
-| `logs/automation_*.log`, `logs/test20_*.log` | Transcript dei launcher |
+| `logs/automation_*.log` | Transcript del launcher giornaliero |
 | `logs/*codex_last_message_*.txt` | Ultimo messaggio della sessione Codex |
 | `logs/automation_archive/` | Queue e decisioni delle sessioni precedenti |
 | `logs/debug_*`, `screenshots_errors/` | Diagnostica della pagina e degli errori |

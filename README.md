@@ -21,17 +21,24 @@ flowchart TD
     C --> D[Queue JSONL e prompt]
     D --> E{Queue vuota?}
     E -->|Sì| F[Fine senza modifiche]
-    E -->|No| G[Codex CLI: classificazione]
-    G --> H[Validazione del file decisioni]
+    E -->|No| G[Codex CLI: prima valutazione]
+    G --> P{Confidence iniziale almeno 0.75?}
+    P -->|Sì| Q[Scrittura delle decisioni JSONL]
+    P -->|No| R["Controllo del link con Codex + agent-browser, se configurato"]
+    R --> S[Nuova valutazione del sentiment e della confidence]
+    S --> Q
+    Q --> H[Validazione del file decisioni]
     H -->|Errore| I[Interruzione prima della fase apply]
     H -->|Valido| J[Playwright: ricerca delle corrispondenze]
-    J --> K{Decisione presente e confidence sopra soglia?}
-    K -->|No| L[Segnalazione per revisione]
+    J --> K{Decisione presente e confidence finale almeno pari alla soglia?}
+    K -->|No| L[Nessun aggiornamento: segnalazione per revisione manuale]
     K -->|Sì| M[Aggiornamento del sentiment]
     M --> N[Verifica tramite toast o tag controllato]
     L --> O[Log CSV e JSONL]
     N --> O
 ```
+
+Il controllo del link avviene durante la classificazione Codex, prima della scrittura delle decisioni. Se la confidence finale rimane sotto soglia, oppure manca una decisione corrispondente, la fase di applicazione lascia il risultato invariato e lo segnala per revisione manuale. Il prompt richiede il controllo del contenuto; l'uso di `agent-browser` dipende dalla configurazione della sessione Codex e non è imposto dai launcher di questo repository.
 
 ## Come funziona una singola esecuzione
 
@@ -53,7 +60,7 @@ Il risultato è `logs/codex_review_queue.jsonl`: una riga JSON per menzione, con
 
 Il launcher passa a `codex.cmd exec` il prompt e l'intera queue tramite standard input. Codex deve produrre soltanto `logs/codex_decisions.jsonl`, senza eseguire il bot né aggiornare LinkMonitor.
 
-Il prompt chiede di valutare l'impatto reputazionale sul brand, non soltanto il tono linguistico. Ammette tre valori: `positivo`, `neutro` e `negativo`. Chiede inoltre di controllare il contenuto del link quando una prima valutazione non raggiunge `0.75`; l'effettiva possibilità di aprirlo dipende dagli strumenti e dai permessi disponibili nella sessione Codex.
+Il prompt chiede di valutare l'impatto reputazionale sul brand, non soltanto il tono linguistico. Ammette tre valori: `positivo`, `neutro` e `negativo`. Quando la prima valutazione non raggiunge `0.75`, chiede a Codex di aprire il link, verificarne il contenuto e rivalutare sentiment e confidence prima di scrivere la decisione finale. Con `agent-browser` configurato nella sessione Codex, questo approfondimento può avvenire tramite browser; l'effettiva possibilità di aprire il contenuto dipende dagli strumenti e dai permessi disponibili. Se l'incertezza rimane dopo il controllo, Codex deve lasciare la confidence sotto soglia: il bot registra il caso per revisione manuale e non aggiorna il risultato.
 
 ```json
 {"url":"https://example.invalid/iniziativa-sociale","title":"Brand demo presenta una nuova iniziativa sociale","sentiment":"positivo","confidence":0.86,"reason":"Esempio fittizio: contenuto favorevole al brand."}
